@@ -300,15 +300,7 @@ const Milestones = () => {
                       {task.title}
                     </span>
                   </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-4"
-                >
-                  <Plus size={16} className="mr-2" />
-                  Add Task
-                </Button>
+                ))}          
               
           <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
             <DialogTrigger asChild>
@@ -381,6 +373,8 @@ const Milestones = () => {
           </Dialog>
         </div>
       </div>
+    </div>
+    </div>
     </div>
   );
 };
