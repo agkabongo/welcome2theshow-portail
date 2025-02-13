@@ -1,67 +1,38 @@
-
 import { useState } from "react";
-import { Award, Calendar, Plus, ListTodo, ArrowRight } from "lucide-react";
+import { Award, Calendar, Plus, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-type Milestone = {
-  id: number;
-  title: string;
-  date: string;
-  description: string;
-  category: "release" | "performance" | "award";
-};
 
-type Task = {
-  id: number;
-  title: string;
-  completed: boolean;
-  relatedMilestoneId?: number;
-};
 
-const initialMilestones: Milestone[] = [
-  {
-    id: 1,
-    title: "First Album Release",
-    date: "2024-06-15",
-    description: "Released debut album 'New Beginnings' on major streaming platforms",
-    category: "release",
-  },
-  {
-    id: 2,
-    title: "Sold Out Show",
-    date: "2024-08-20",
-    description: "First sold-out performance at Madison Square Garden",
-    category: "performance",
-  },
-  {
-    id: 3,
-    title: "Industry Award",
-    date: "2024-12-01",
-    description: "Won 'Best New Artist' at the Annual Music Awards",
-    category: "award",
-  },
+const initialMilestones = [
+  { id: 1, title: "First Album Release", date: "2024-06-15", description: "Released debut album 'New Beginnings'", category: "release" },
+  { id: 2, title: "Sold Out Show", date: "2024-08-20", description: "First sold-out performance at MSG", category: "performance" },
+  { id: 3, title: "Industry Award", date: "2024-12-01", description: "Won 'Best New Artist'", category: "award" },
 ];
 
-const initialTasks: Task[] = [
+const initialTasks = [
   { id: 1, title: "Finalize album artwork", completed: false, relatedMilestoneId: 1 },
   { id: 2, title: "Book studio time", completed: true, relatedMilestoneId: 1 },
   { id: 3, title: "Contact venue management", completed: false, relatedMilestoneId: 2 },
 ];
 
 const Milestones = () => {
-  const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones);
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [milestones, setMilestones] = useState(initialMilestones);
+  const [tasks, setTasks] = useState(initialTasks);
+  const [isMilestoneDialogOpen, setIsMilestoneDialogOpen] = useState(false);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [newMilestone, setNewMilestone] = useState({ id: 0, title: "", date: "", description: "", category: "release" });
+  const [newTask, setNewTask] = useState({ id: 0, title: "", completed: false, relatedMilestoneId: undefined });
 
-  const addMilestone = (milestone: Milestone) => {
-  setMilestones(prev => [...prev, milestone]);
-};
-
-const updateMilestone = (updatedMilestone: Milestone) => {
-  setMilestones(prev =>
-    prev.map(milestone => milestone.id === updatedMilestone.id ? updatedMilestone : milestone)
-  );
-};
+  const addMilestone = () => {
+    setMilestones(prev => [...prev, { ...newMilestone, id: Date.now() }]);
+    setIsMilestoneDialogOpen(false);
+    setNewMilestone({ id: 0, title: "", date: "", description: "", category: "release" });
+  };
 
 const deleteMilestone = (id: number) => {
   setMilestones(prev => prev.filter(milestone => milestone.id !== id));
@@ -156,20 +127,22 @@ const deleteTask = (id: number) => {
                     </span>
                   </div>
                 ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-4" 
-onClick={() => addTask({
-    id: tasks.length + 1,
-    title: "New Task",
-    completed: false,
-    relatedMilestoneId: milestones[0]?.id
-  })}
-                >
-                  <Plus size={16} className="mr-2" />
-                  Add Task
-                </Button>
+
+
+                    <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="mt-4 w-full">Add Task</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add a New Task</DialogTitle>
+              </DialogHeader>
+              <Input placeholder="Task Title" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} />
+              <DialogFooter>
+                <Button onClick={addTask}>Add Task</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
               </div>
             </div>
           </div>
@@ -183,16 +156,27 @@ onClick={() => addTask({
                   Track your musical journey achievements
                 </p>
               </div>
-              <Button className="flex items-center gap-2" onClick={() => addMilestone({
-    id: milestones.length + 1,
-    title: "New Milestone",
-    date: new Date().toISOString().split('T')[0],
-    description: "New milestone description",
-    category: "release"
-  })} >
-                <Plus size={18} />
-                Add Milestone
-              </Button>
+
+         
+
+                    <Dialog open={isMilestoneDialogOpen} onOpenChange={setIsMilestoneDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="mt-4 w-full">Add Milestone</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add a New Milestone</DialogTitle>
+              </DialogHeader>
+              <Input placeholder="Milestone Title" value={newMilestone.title} onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })} />
+              <Input type="date" value={newMilestone.date} onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })} />
+              <Textarea placeholder="Description" value={newMilestone.description} onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })} />
+              <DialogFooter>
+                <Button onClick={addMilestone}>Add Milestone</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+              
             </div>
 
             <div className="space-y-6">
