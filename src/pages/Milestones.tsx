@@ -388,3 +388,6 @@ const Milestones = () => {
     
   );
 };
+
+
+export default Milestones;
