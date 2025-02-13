@@ -53,6 +53,20 @@ const Milestones = () => {
   const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
 
+  const addMilestone = (milestone: Milestone) => {
+  setMilestones(prev => [...prev, milestone]);
+};
+
+const updateMilestone = (updatedMilestone: Milestone) => {
+  setMilestones(prev =>
+    prev.map(milestone => milestone.id === updatedMilestone.id ? updatedMilestone : milestone)
+  );
+};
+
+const deleteMilestone = (id: number) => {
+  setMilestones(prev => prev.filter(milestone => milestone.id !== id));
+};
+
   const getUpcomingMilestone = () => {
     const now = new Date();
     return milestones
@@ -67,6 +81,19 @@ const Milestones = () => {
       )
     );
   };
+  const addTask = (task: Task) => {
+  setTasks(prev => [...prev, task]);
+};
+
+const updateTask = (updatedTask: Task) => {
+  setTasks(prev =>
+    prev.map(task => task.id === updatedTask.id ? updatedTask : task)
+  );
+};
+
+const deleteTask = (id: number) => {
+  setTasks(prev => prev.filter(task => task.id !== id));
+};
 
   const upcomingMilestone = getUpcomingMilestone();
 
@@ -132,7 +159,13 @@ const Milestones = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full mt-4"
+                  className="w-full mt-4" 
+onClick={() => addTask({
+    id: tasks.length + 1,
+    title: "New Task",
+    completed: false,
+    relatedMilestoneId: milestones[0]?.id
+  })}
                 >
                   <Plus size={16} className="mr-2" />
                   Add Task
@@ -150,7 +183,13 @@ const Milestones = () => {
                   Track your musical journey achievements
                 </p>
               </div>
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2" onClick={() => addMilestone({
+    id: milestones.length + 1,
+    title: "New Milestone",
+    date: new Date().toISOString().split('T')[0],
+    description: "New milestone description",
+    category: "release"
+  })} >
                 <Plus size={18} />
                 Add Milestone
               </Button>
