@@ -244,8 +244,38 @@ const Milestones = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 animate-fade-in">
-      <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-6 mb-8">
+<div className="container mx-auto px-4 py-8 animate-fade-in">
+      <div className="max-w-4xl mx-auto">
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          {/* Left Column: Upcoming Milestone */}
+          <div className="md:col-span-1">
+            <div className="bg-white rounded-lg p-6 shadow-lg">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Calendar size={20} className="text-primary" />
+                Upcoming Milestone
+              </h2>
+              {upcomingMilestone ? (
+                <div>
+                  <div className="mb-2">
+                    <span className={cn(
+                      "px-2 py-1 rounded-full text-xs",
+                      upcomingMilestone.category === "release" && "bg-blue-100 text-blue-700",
+                      upcomingMilestone.category === "performance" && "bg-green-100 text-green-700",
+                      upcomingMilestone.category === "award" && "bg-purple-100 text-purple-700"
+                    )}>
+                      {upcomingMilestone.category}
+                    </span>
+                  </div>
+                  <h3 className="font-medium mb-1">{upcomingMilestone.title}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(upcomingMilestone.date).toLocaleDateString()}
+                  </p>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">No upcoming milestones</p>
+              )}
+            </div>
+
         {/* Tasks Column */}
         <div className="bg-white rounded-lg p-6 shadow-lg">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
