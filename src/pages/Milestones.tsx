@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+
+=======
 import { useState } from "react";
 import { Award, Calendar, Plus, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,9 +55,11 @@ const deleteMilestone = (id: number) => {
       )
     );
   };
-  const addTask = (task: Task) => {
-  setTasks(prev => [...prev, task]);
-};
+  const addTask = () => {
+    setTasks(prev => [...prev, { ...newTask, id: Date.now() }]);
+    setIsTaskDialogOpen(false);
+    setNewTask({ id: 0, title: "", completed: false, relatedMilestoneId: undefined });
+  };
 
 const updateTask = (updatedTask: Task) => {
   setTasks(prev =>
@@ -161,7 +166,11 @@ const deleteTask = (id: number) => {
 
                     <Dialog open={isMilestoneDialogOpen} onOpenChange={setIsMilestoneDialogOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" className="mt-4 w-full">Add Milestone</Button>
+             
+              <Button className="flex items-center gap-2">
+                 <Plus size={18} />
+                 Add Milestone
+               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -172,6 +181,7 @@ const deleteTask = (id: number) => {
               <Textarea placeholder="Description" value={newMilestone.description} onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })} />
               <DialogFooter>
                 <Button onClick={addMilestone}>Add Milestone</Button>
+                
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -220,3 +230,5 @@ const deleteTask = (id: number) => {
 };
 
 export default Milestones;
+
+>>>>>>> 3657cb69733e70411bc0b1d4bbfbc16e851106e4
