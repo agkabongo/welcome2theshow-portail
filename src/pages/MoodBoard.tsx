@@ -14,8 +14,9 @@ const MoodBoard = () => {
     Array.from(files).forEach((file) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        if (typeof e.target?.result === "string") {
-          setImages((prev) => [...prev, e.target.result]);
+        const result = e.target?.result;
+        if (typeof result === "string") {
+          setImages((prev) => [...prev, result]);
           toast.success("Image added to mood board");
         }
       };
