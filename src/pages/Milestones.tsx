@@ -251,14 +251,35 @@ const Milestones = () => {
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <ListTodo size={20} /> Tasks
           </h2>
-          <ul>
-            {tasks.map(task => (
-              <li key={task.id} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg">
-                <input type="checkbox" checked={task.completed} onChange={() => toggleTaskCompletion(task.id)} />
-                <span className={cn("flex-1", task.completed && "line-through text-muted-foreground")}>{task.title}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="space-y-3">
+                {tasks.map(task => (
+                  <div
+                    key={task.id}
+                    className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => toggleTaskCompletion(task.id)}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span className={cn(
+                      "flex-1 text-sm",
+                      task.completed && "line-through text-muted-foreground"
+                    )}>
+                      {task.title}
+                    </span>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full mt-4"
+                >
+                  <Plus size={16} className="mr-2" />
+                  Add Task
+                </Button>
+              
           <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="mt-4 w-full">Add Task</Button>
@@ -274,6 +295,7 @@ const Milestones = () => {
             </DialogContent>
           </Dialog>
         </div>
+        </div>
         
         {/* Milestones Column */}
         <div className="bg-white rounded-lg p-6 shadow-lg">
@@ -287,6 +309,30 @@ const Milestones = () => {
               <p>{milestone.description}</p>
             </div>
           ))}
+
+<div className="space-y-6">
+  {milestones.map((milestone) => (
+  <div key={milestone.id} className="relative flex gap-4 bg-white rounded-lg p-6 shadow-lg transition-all hover:shadow-xl">
+    <div className="absolute -left-2 top-6 w-4 h-4 rounded-full bg-primary" />
+    <div className="flex-1">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="text-sm text-muted-foreground">
+          <Calendar size={14} className="inline mr-1" />
+          {new Date(milestone.date).toLocaleDateString()}
+        </span>
+        <span className={cn( "px-2 py-1 rounded-full text-xs" , milestone.category==="release" && "bg-blue-100 text-blue-700" , milestone.category==="performance" && "bg-green-100 text-green-700" , milestone.category==="award" && "bg-purple-100 text-purple-700" )}>
+          {milestone.category}
+        </span>
+      </div>
+      <h3 className="text-xl font-semibold mb-2">{milestone.title}</h3>
+      <p className="text-muted-foreground">{milestone.description}</p>
+    </div>
+    {milestone.category === "award" && (
+    <Award className="text-primary" size={24} />
+    )}
+  </div>
+  ))}
+</div>
           <Dialog open={isMilestoneDialogOpen} onOpenChange={setIsMilestoneDialogOpen}>
             <DialogTrigger asChild>
               <Button variant="outline" className="mt-4 w-full">Add Milestone</Button>
