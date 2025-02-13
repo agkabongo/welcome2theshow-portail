@@ -243,6 +243,16 @@ const Milestones = () => {
     setTasks(prev => prev.map(task => (task.id === taskId ? { ...task, completed: !task.completed } : task)));
   };
 
+  const getUpcomingMilestone = () => {
+    const now = new Date();
+    return milestones
+      .filter(m => new Date(m.date) > now)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+  };
+
+
+  const upcomingMilestone = getUpcomingMilestone();
+
   return (
 <div className="container mx-auto px-4 py-8 animate-fade-in">
       <div className="max-w-4xl mx-auto">
