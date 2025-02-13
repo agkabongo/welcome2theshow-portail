@@ -1,8 +1,8 @@
-
 import { useState } from "react";
-import { Award, Calendar, Plus, ListTodo, ArrowRight } from "lucide-react";
+import { Award, Calendar, Plus, ListTodo, Pencil, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import Modal from "@/components/ui/modal";
 
 type Milestone = {
   id: number;
@@ -20,27 +20,9 @@ type Task = {
 };
 
 const initialMilestones: Milestone[] = [
-  {
-    id: 1,
-    title: "First Album Release",
-    date: "2024-06-15",
-    description: "Released debut album 'New Beginnings' on major streaming platforms",
-    category: "release",
-  },
-  {
-    id: 2,
-    title: "Sold Out Show",
-    date: "2024-08-20",
-    description: "First sold-out performance at Madison Square Garden",
-    category: "performance",
-  },
-  {
-    id: 3,
-    title: "Industry Award",
-    date: "2024-12-01",
-    description: "Won 'Best New Artist' at the Annual Music Awards",
-    category: "award",
-  },
+  { id: 1, title: "First Album Release", date: "2024-06-15", description: "Released debut album.", category: "release" },
+  { id: 2, title: "Sold Out Show", date: "2024-08-20", description: "First sold-out performance.", category: "performance" },
+  { id: 3, title: "Industry Award", date: "2024-12-01", description: "Won 'Best New Artist'.", category: "award" },
 ];
 
 const initialTasks: Task[] = [
@@ -52,185 +34,52 @@ const initialTasks: Task[] = [
 const Milestones = () => {
   const [milestones, setMilestones] = useState<Milestone[]>(initialMilestones);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
 
-  const addMilestone = (milestone: Milestone) => {
-  setMilestones(prev => [...prev, milestone]);
-};
-
-const updateMilestone = (updatedMilestone: Milestone) => {
-  setMilestones(prev =>
-    prev.map(milestone => milestone.id === updatedMilestone.id ? updatedMilestone : milestone)
-  );
-};
-
-const deleteMilestone = (id: number) => {
-  setMilestones(prev => prev.filter(milestone => milestone.id !== id));
-};
-
-  const getUpcomingMilestone = () => {
-    const now = new Date();
-    return milestones
-      .filter(m => new Date(m.date) > now)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+  const addMilestone = () => {
+    const newMilestone = { id: milestones.length + 1, title: "New Milestone", date: new Date().toISOString().split('T')[0], description: "Description", category: "release" };
+    setMilestones(prev => [...prev, newMilestone]);
   };
 
-  const toggleTaskCompletion = (taskId: number) => {
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
-    );
+  const updateMilestone = (updatedMilestone: Milestone) => {
+    setMilestones(prev => prev.map(m => m.id === updatedMilestone.id ? updatedMilestone : m));
   };
-  const addTask = (task: Task) => {
-  setTasks(prev => [...prev, task]);
-};
 
-const updateTask = (updatedTask: Task) => {
-  setTasks(prev =>
-    prev.map(task => task.id === updatedTask.id ? updatedTask : task)
-  );
-};
-
-const deleteTask = (id: number) => {
-  setTasks(prev => prev.filter(task => task.id !== id));
-};
-
-  const upcomingMilestone = getUpcomingMilestone();
+  const deleteMilestone = (id: number) => {
+    setMilestones(prev => prev.filter(m => m.id !== id));
+  };
 
   return (
-    <div className="container mx-auto px-4 py-8 animate-fade-in">
+    <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          {/* Left Column: Upcoming Milestone */}
-          <div className="md:col-span-1">
-            <div className="bg-white rounded-lg p-6 shadow-lg">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Calendar size={20} className="text-primary" />
-                Upcoming Milestone
-              </h2>
-              {upcomingMilestone ? (
-                <div>
-                  <div className="mb-2">
-                    <span className={cn(
-                      "px-2 py-1 rounded-full text-xs",
-                      upcomingMilestone.category === "release" && "bg-blue-100 text-blue-700",
-                      upcomingMilestone.category === "performance" && "bg-green-100 text-green-700",
-                      upcomingMilestone.category === "award" && "bg-purple-100 text-purple-700"
-                    )}>
-                      {upcomingMilestone.category}
-                    </span>
-                  </div>
-                  <h3 className="font-medium mb-1">{upcomingMilestone.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(upcomingMilestone.date).toLocaleDateString()}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-muted-foreground">No upcoming milestones</p>
-              )}
-            </div>
-
-            {/* Task Management */}
-            <div className="bg-white rounded-lg p-6 shadow-lg mt-6">
-              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <ListTodo size={20} className="text-primary" />
-                Tasks
-              </h2>
-              <div className="space-y-3">
-                {tasks.map(task => (
-                  <div
-                    key={task.id}
-                    className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg transition-colors"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={task.completed}
-                      onChange={() => toggleTaskCompletion(task.id)}
-                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <span className={cn(
-                      "flex-1 text-sm",
-                      task.completed && "line-through text-muted-foreground"
-                    )}>
-                      {task.title}
-                    </span>
-                  </div>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full mt-4" 
-onClick={() => addTask({
-    id: tasks.length + 1,
-    title: "New Task",
-    completed: false,
-    relatedMilestoneId: milestones[0]?.id
-  })}
-                >
-                  <Plus size={16} className="mr-2" />
-                  Add Task
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold">Career Milestones</h1>
+          <Button onClick={addMilestone}><Plus size={18} /> Add Milestone</Button>
+        </div>
+        <div className="space-y-6">
+          {milestones.map(milestone => (
+            <div key={milestone.id} className="bg-white p-6 rounded-lg shadow-lg relative">
+              <h3 className="text-xl font-semibold">{milestone.title}</h3>
+              <p className="text-sm text-muted-foreground">{milestone.description}</p>
+              <p className="text-sm font-semibold"><Calendar size={14} className="inline mr-1" /> {milestone.date}</p>
+              <div className="absolute top-2 right-2 flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => setSelectedMilestone(milestone)}>
+                  <Pencil size={16} />
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => deleteMilestone(milestone.id)}>
+                  <Trash size={16} />
                 </Button>
               </div>
             </div>
-          </div>
-
-          {/* Right Column: Milestones Timeline */}
-          <div className="md:col-span-2">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h1 className="text-4xl font-bold mb-2">Career Milestones</h1>
-                <p className="text-muted-foreground">
-                  Track your musical journey achievements
-                </p>
-              </div>
-              <Button className="flex items-center gap-2" onClick={() => addMilestone({
-    id: milestones.length + 1,
-    title: "New Milestone",
-    date: new Date().toISOString().split('T')[0],
-    description: "New milestone description",
-    category: "release"
-  })} >
-                <Plus size={18} />
-                Add Milestone
-              </Button>
-            </div>
-
-            <div className="space-y-6">
-              {milestones.map((milestone) => (
-                <div
-                  key={milestone.id}
-                  className="relative flex gap-4 bg-white rounded-lg p-6 shadow-lg transition-all hover:shadow-xl"
-                >
-                  <div className="absolute -left-2 top-6 w-4 h-4 rounded-full bg-primary" />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-sm text-muted-foreground">
-                        <Calendar size={14} className="inline mr-1" />
-                        {new Date(milestone.date).toLocaleDateString()}
-                      </span>
-                      <span
-                        className={cn(
-                          "px-2 py-1 rounded-full text-xs",
-                          milestone.category === "release" && "bg-blue-100 text-blue-700",
-                          milestone.category === "performance" && "bg-green-100 text-green-700",
-                          milestone.category === "award" && "bg-purple-100 text-purple-700"
-                        )}
-                      >
-                        {milestone.category}
-                      </span>
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">{milestone.title}</h3>
-                    <p className="text-muted-foreground">{milestone.description}</p>
-                  </div>
-                  {milestone.category === "award" && (
-                    <Award className="text-primary" size={24} />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
       </div>
+      {selectedMilestone && (
+        <Modal title="Edit Milestone" onClose={() => setSelectedMilestone(null)}>
+          <input type="text" value={selectedMilestone.title} onChange={(e) => setSelectedMilestone({ ...selectedMilestone, title: e.target.value })} className="w-full p-2 border rounded-md mb-4" />
+          <Button onClick={() => { updateMilestone(selectedMilestone); setSelectedMilestone(null); }}>Save</Button>
+        </Modal>
+      )}
     </div>
   );
 };
