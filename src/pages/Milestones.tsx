@@ -286,8 +286,8 @@ const Milestones = () => {
               )}
             </div>
 
-        {/* Tasks Column */}
-        <div className="bg-white rounded-lg p-6 shadow-lg">
+           {/* Tasks Column */}
+            <div className="bg-white rounded-lg p-6 shadow-lg">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <ListTodo size={20} /> Tasks
           </h2>
@@ -328,7 +328,8 @@ const Milestones = () => {
           </Dialog>
         </div>
         </div>
-        
+          </div>
+         </div>
         {/* Milestones Column */}
         <div className="bg-white rounded-lg p-6 shadow-lg">
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -342,7 +343,7 @@ const Milestones = () => {
             </div>
           ))}
 
-<div className="space-y-6">
+                      <div className="space-y-6">
   {milestones.map((milestone) => (
   <div key={milestone.id} className="relative flex gap-4 bg-white rounded-lg p-6 shadow-lg transition-all hover:shadow-xl">
     <div className="absolute -left-2 top-6 w-4 h-4 rounded-full bg-primary" />
@@ -384,9 +385,6 @@ const Milestones = () => {
         </div>
       </div>
     </div>
-    </div>
-    </div>
+    
   );
 };
-
-export default Milestones;
