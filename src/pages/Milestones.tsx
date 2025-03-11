@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-
-=======
 import { useState } from "react";
 import { Award, Calendar, Plus, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -230,5 +227,3 @@ const deleteTask = (id: number) => {
 };
 
 export default Milestones;
-
->>>>>>> 3657cb69733e70411bc0b1d4bbfbc16e851106e4
