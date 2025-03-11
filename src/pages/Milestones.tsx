@@ -1,12 +1,18 @@
 import { useState } from "react";
-import { Award, Calendar, Plus, ListTodo } from "lucide-react";
+import { Award, Calendar, Plus, ListTodo, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
-
+type Task = {
+  id: number;
+  title: string;
+  completed: boolean;
+  relatedMilestoneId?: number;
+};
 
 const initialMilestones = [
   { id: 1, title: "First Album Release", date: "2024-06-15", description: "Released debut album 'New Beginnings'", category: "release" },
@@ -25,18 +31,11 @@ const Milestones = () => {
   const [tasks, setTasks] = useState(initialTasks);
   const [isMilestoneDialogOpen, setIsMilestoneDialogOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
-  const [newMilestone, setNewMilestone] = useState({ id: 0, title: "", date: "", description: "", category: "release" });
+  const [editingMilestone, setEditingMilestone] = useState<typeof initialMilestones[0] | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [newMilestone, setNewMilestone] = useState({ id: 0, title: "", date: "", description: "", category: "release" as const });
   const [newTask, setNewTask] = useState({ id: 0, title: "", completed: false, relatedMilestoneId: undefined });
-
-  const addMilestone = () => {
-    setMilestones(prev => [...prev, { ...newMilestone, id: Date.now() }]);
-    setIsMilestoneDialogOpen(false);
-    setNewMilestone({ id: 0, title: "", date: "", description: "", category: "release" });
-  };
-
-const deleteMilestone = (id: number) => {
-  setMilestones(prev => prev.filter(milestone => milestone.id !== id));
-};
+  const { toast } = useToast();
 
   const getUpcomingMilestone = () => {
     const now = new Date();
@@ -52,21 +51,76 @@ const deleteMilestone = (id: number) => {
       )
     );
   };
-  const addTask = () => {
-    setTasks(prev => [...prev, { ...newTask, id: Date.now() }]);
-    setIsTaskDialogOpen(false);
-    setNewTask({ id: 0, title: "", completed: false, relatedMilestoneId: undefined });
+
+  const handleEditMilestone = (milestone: typeof initialMilestones[0]) => {
+    setEditingMilestone(milestone);
+    setNewMilestone(milestone);
+    setIsMilestoneDialogOpen(true);
   };
 
-const updateTask = (updatedTask: Task) => {
-  setTasks(prev =>
-    prev.map(task => task.id === updatedTask.id ? updatedTask : task)
-  );
-};
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+    setNewTask(task);
+    setIsTaskDialogOpen(true);
+  };
 
-const deleteTask = (id: number) => {
-  setTasks(prev => prev.filter(task => task.id !== id));
-};
+  const addMilestone = () => {
+    if (editingMilestone) {
+      setMilestones(prev => prev.map(m => 
+        m.id === editingMilestone.id ? { ...newMilestone, id: m.id } : m
+      ));
+      toast({
+        title: "Milestone updated",
+        description: "The milestone has been successfully updated.",
+      });
+    } else {
+      setMilestones(prev => [...prev, { ...newMilestone, id: Date.now() }]);
+      toast({
+        title: "Milestone added",
+        description: "New milestone has been successfully added.",
+      });
+    }
+    setIsMilestoneDialogOpen(false);
+    setNewMilestone({ id: 0, title: "", date: "", description: "", category: "release" });
+    setEditingMilestone(null);
+  };
+
+  const addTask = () => {
+    if (editingTask) {
+      setTasks(prev => prev.map(t => 
+        t.id === editingTask.id ? { ...newTask, id: t.id } : t
+      ));
+      toast({
+        title: "Task updated",
+        description: "The task has been successfully updated.",
+      });
+    } else {
+      setTasks(prev => [...prev, { ...newTask, id: Date.now() }]);
+      toast({
+        title: "Task added",
+        description: "New task has been successfully added.",
+      });
+    }
+    setIsTaskDialogOpen(false);
+    setNewTask({ id: 0, title: "", completed: false, relatedMilestoneId: undefined });
+    setEditingTask(null);
+  };
+
+  const deleteMilestone = (id: number) => {
+    setMilestones(prev => prev.filter(milestone => milestone.id !== id));
+    toast({
+      title: "Milestone deleted",
+      description: "The milestone has been successfully deleted.",
+    });
+  };
+
+  const deleteTask = (id: number) => {
+    setTasks(prev => prev.filter(task => task.id !== id));
+    toast({
+      title: "Task deleted",
+      description: "The task has been successfully deleted.",
+    });
+  };
 
   const upcomingMilestone = getUpcomingMilestone();
 
@@ -74,7 +128,6 @@ const deleteTask = (id: number) => {
     <div className="container mx-auto px-4 py-8 animate-fade-in">
       <div className="max-w-4xl mx-auto">
         <div className="grid md:grid-cols-3 gap-6 mb-8">
-          {/* Left Column: Upcoming Milestone */}
           <div className="md:col-span-1">
             <div className="bg-white rounded-lg p-6 shadow-lg">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -103,7 +156,6 @@ const deleteTask = (id: number) => {
               )}
             </div>
 
-            {/* Task Management */}
             <div className="bg-white rounded-lg p-6 shadow-lg mt-6">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                 <ListTodo size={20} className="text-primary" />
@@ -127,29 +179,50 @@ const deleteTask = (id: number) => {
                     )}>
                       {task.title}
                     </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditTask(task)}
+                      className="p-0 h-8 w-8"
+                    >
+                      <Pencil size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteTask(task.id)}
+                      className="p-0 h-8 w-8 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
                   </div>
                 ))}
-
-
-                    <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="mt-4 w-full">Add Task</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add a New Task</DialogTitle>
-              </DialogHeader>
-              <Input placeholder="Task Title" value={newTask.title} onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} />
-              <DialogFooter>
-                <Button onClick={addTask}>Add Task</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" className="mt-4 w-full">
+                      {editingTask ? "Update Task" : "Add Task"}
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>{editingTask ? "Edit Task" : "Add a New Task"}</DialogTitle>
+                    </DialogHeader>
+                    <Input 
+                      placeholder="Task Title" 
+                      value={newTask.title} 
+                      onChange={(e) => setNewTask({ ...newTask, title: e.target.value })} 
+                    />
+                    <DialogFooter>
+                      <Button onClick={addTask}>
+                        {editingTask ? "Update Task" : "Add Task"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
           </div>
 
-          {/* Right Column: Milestones Timeline */}
           <div className="md:col-span-2">
             <div className="flex justify-between items-center mb-8">
               <div>
@@ -158,33 +231,41 @@ const deleteTask = (id: number) => {
                   Track your musical journey achievements
                 </p>
               </div>
-
-         
-
-                    <Dialog open={isMilestoneDialogOpen} onOpenChange={setIsMilestoneDialogOpen}>
-            <DialogTrigger asChild>
-             
-              <Button className="flex items-center gap-2">
-                 <Plus size={18} />
-                 Add Milestone
-               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add a New Milestone</DialogTitle>
-              </DialogHeader>
-              <Input placeholder="Milestone Title" value={newMilestone.title} onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })} />
-              <Input type="date" value={newMilestone.date} onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })} />
-              <Textarea placeholder="Description" value={newMilestone.description} onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })} />
-              <DialogFooter>
-                <Button onClick={addMilestone}>Add Milestone</Button>
-                
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-              
             </div>
+
+            <Dialog open={isMilestoneDialogOpen} onOpenChange={setIsMilestoneDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus size={18} />
+                  {editingMilestone ? "Update Milestone" : "Add Milestone"}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{editingMilestone ? "Edit Milestone" : "Add a New Milestone"}</DialogTitle>
+                </DialogHeader>
+                <Input 
+                  placeholder="Milestone Title" 
+                  value={newMilestone.title} 
+                  onChange={(e) => setNewMilestone({ ...newMilestone, title: e.target.value })} 
+                />
+                <Input 
+                  type="date" 
+                  value={newMilestone.date} 
+                  onChange={(e) => setNewMilestone({ ...newMilestone, date: e.target.value })} 
+                />
+                <Textarea 
+                  placeholder="Description" 
+                  value={newMilestone.description} 
+                  onChange={(e) => setNewMilestone({ ...newMilestone, description: e.target.value })} 
+                />
+                <DialogFooter>
+                  <Button onClick={addMilestone}>
+                    {editingMilestone ? "Update Milestone" : "Add Milestone"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             <div className="space-y-6">
               {milestones.map((milestone) => (
@@ -212,6 +293,24 @@ const deleteTask = (id: number) => {
                     </div>
                     <h3 className="text-xl font-semibold mb-2">{milestone.title}</h3>
                     <p className="text-muted-foreground">{milestone.description}</p>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditMilestone(milestone)}
+                      className="p-0 h-8 w-8"
+                    >
+                      <Pencil size={16} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteMilestone(milestone.id)}
+                      className="p-0 h-8 w-8 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 size={16} />
+                    </Button>
                   </div>
                   {milestone.category === "award" && (
                     <Award className="text-primary" size={24} />
