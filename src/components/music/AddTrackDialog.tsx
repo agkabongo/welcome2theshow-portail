@@ -17,10 +17,12 @@ import { toast } from "sonner";
 import { MusicTrack } from "@/types";
 
 interface AddTrackDialogProps {
-  onAddTrack: (track: MusicTrack) => void;
+  onAddTrack: (trackData: Omit<MusicTrack, 'id' | 'artist_id' | 'created_at'>) => Promise<MusicTrack | null>;
 }
 
 export const AddTrackDialog = ({ onAddTrack }: AddTrackDialogProps) => {
+  const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [newTrack, setNewTrack] = useState({
     title: "",
     release_date: "",
@@ -36,35 +38,36 @@ export const AddTrackDialog = ({ onAddTrack }: AddTrackDialogProps) => {
     });
   };
 
-  const handleAddTrack = () => {
+  const handleAddTrack = async () => {
     if (!newTrack.title) {
       toast.error("Veuillez saisir un titre pour le morceau");
       return;
     }
 
-    const track: MusicTrack = {
-      id: crypto.randomUUID(),
-      artist_id: "temp-artist-id", // Ceci serait remplacé par l'ID réel de l'artiste
-      title: newTrack.title,
-      release_date: newTrack.release_date,
-      audio_url: newTrack.audio_url,
-      cover_art_url: newTrack.cover_art_url,
-      created_at: new Date().toISOString(),
-    };
-
-    onAddTrack(track);
+    setIsSubmitting(true);
     
-    // Reset the form
-    setNewTrack({
-      title: "",
-      release_date: "",
-      audio_url: "",
-      cover_art_url: "",
-    });
+    try {
+      const result = await onAddTrack(newTrack);
+      
+      if (result) {
+        // Reset the form
+        setNewTrack({
+          title: "",
+          release_date: "",
+          audio_url: "",
+          cover_art_url: "",
+        });
+        
+        // Close the dialog
+        setOpen(false);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="flex items-center gap-2">
           <PlusCircle size={18} />
@@ -121,7 +124,9 @@ export const AddTrackDialog = ({ onAddTrack }: AddTrackDialogProps) => {
           <DialogClose asChild>
             <Button variant="outline">Annuler</Button>
           </DialogClose>
-          <Button onClick={handleAddTrack}>Ajouter</Button>
+          <Button onClick={handleAddTrack} disabled={isSubmitting}>
+            {isSubmitting ? "Ajout en cours..." : "Ajouter"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,34 +1,37 @@
 
-import { useState } from "react";
-import { toast } from "sonner";
-import { MusicTrack } from "@/types";
+import { useEffect } from "react";
 import { MusicHeader } from "@/components/music/MusicHeader";
 import { AddTrackDialog } from "@/components/music/AddTrackDialog";
 import { MusicTrackGrid } from "@/components/music/MusicTrackGrid";
+import { useMusicTracks } from "@/hooks/useMusicTracks";
+import { Loader2 } from "lucide-react";
 
 const MusicPage = () => {
-  const [tracks, setTracks] = useState<MusicTrack[]>([]);
+  const { tracks, isLoading, fetchTracks, addTrack, deleteTrack } = useMusicTracks();
 
-  const handleAddTrack = (track: MusicTrack) => {
-    setTracks([...tracks, track]);
-    toast.success("Morceau ajouté avec succès");
-  };
-
-  const handleDeleteTrack = (id: string) => {
-    setTracks(tracks.filter((track) => track.id !== id));
-    toast.success("Morceau supprimé avec succès");
-  };
+  // Refetch tracks when the component mounts
+  useEffect(() => {
+    fetchTracks();
+  }, []);
 
   return (
     <div className="container mx-auto px-4 py-8 animate-fade-in">
       <div className="max-w-4xl mx-auto">
         <MusicHeader 
-          action={<AddTrackDialog onAddTrack={handleAddTrack} />} 
+          action={<AddTrackDialog onAddTrack={addTrack} />} 
         />
-        <MusicTrackGrid 
-          tracks={tracks} 
-          onDeleteTrack={handleDeleteTrack} 
-        />
+        
+        {isLoading ? (
+          <div className="flex justify-center items-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2 text-lg">Chargement des morceaux...</span>
+          </div>
+        ) : (
+          <MusicTrackGrid 
+            tracks={tracks} 
+            onDeleteTrack={deleteTrack} 
+          />
+        )}
       </div>
     </div>
   );
