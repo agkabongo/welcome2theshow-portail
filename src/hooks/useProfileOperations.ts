@@ -12,6 +12,8 @@ export const useProfileOperations = () => {
   const fetchUserProfile = async (userId: string): Promise<Profile | null> => {
     try {
       console.log('Fetching profile for user:', userId);
+      
+      // Use maybeSingle() instead of single() to prevent errors if no profile exists
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -23,7 +25,12 @@ export const useProfileOperations = () => {
         return null;
       }
 
-      console.log('Profile data:', data);
+      if (!data) {
+        console.warn('No profile found for user:', userId);
+        return null;
+      }
+
+      console.log('Profile data found:', data);
       return data as Profile;
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);

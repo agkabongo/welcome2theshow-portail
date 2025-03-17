@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types';
@@ -13,15 +13,29 @@ export const useAuthState = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const initialized = useRef(false);
   const { fetchUserProfile } = useProfileOperations();
+
+  // Function to fetch and set the user profile
+  const loadUserProfile = async (userId: string) => {
+    try {
+      const userProfile = await fetchUserProfile(userId);
+      console.log('User profile loaded:', userProfile?.role);
+      setProfile(userProfile);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      setProfile(null);
+    }
+  };
 
   useEffect(() => {
     // Prevent multiple initializations
-    if (isInitialized) return;
+    if (initialized.current) return;
+    
+    initialized.current = true;
+    console.log('Initializing auth state...');
 
     const initializeAuth = async () => {
-      console.log('Initializing auth state...');
       try {
         // Get current session
         const { data: { session: currentSession } } = await supabase.auth.getSession();
@@ -33,13 +47,7 @@ export const useAuthState = () => {
           
           // Fetch profile if user is logged in
           if (currentSession.user) {
-            try {
-              const userProfile = await fetchUserProfile(currentSession.user.id);
-              setProfile(userProfile);
-              console.log('User profile loaded:', userProfile?.role);
-            } catch (error) {
-              console.error('Error fetching user profile:', error);
-            }
+            await loadUserProfile(currentSession.user.id);
           }
         } else {
           console.log('No active session');
@@ -54,7 +62,6 @@ export const useAuthState = () => {
         setProfile(null);
       } finally {
         setIsLoading(false);
-        setIsInitialized(true);
       }
     };
 
@@ -71,12 +78,7 @@ export const useAuthState = () => {
         
         // Fetch profile if user is logged in
         if (currentSession.user) {
-          try {
-            const userProfile = await fetchUserProfile(currentSession.user.id);
-            setProfile(userProfile);
-          } catch (error) {
-            console.error('Error fetching profile on auth change:', error);
-          }
+          await loadUserProfile(currentSession.user.id);
         }
       } else {
         // User signed out or session expired
@@ -84,13 +86,16 @@ export const useAuthState = () => {
         setUser(null);
         setProfile(null);
       }
+      
+      // Ensure loading state is updated regardless of outcome
+      setIsLoading(false);
     });
 
     // Cleanup subscription on unmount
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [fetchUserProfile, isInitialized]); // Add dependencies
+  }, []); // Empty dependency array
 
   return {
     session,

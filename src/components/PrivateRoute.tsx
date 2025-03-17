@@ -3,6 +3,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect, useRef } from "react";
 
 type PrivateRouteProps = {
   role?: 'artist' | 'manager';
@@ -11,6 +12,12 @@ type PrivateRouteProps = {
 const PrivateRoute = ({ role }: PrivateRouteProps) => {
   const { user, profile, isLoading } = useAuth();
   const location = useLocation();
+  const toastShown = useRef(false);
+
+  // Reset toast flag when location changes
+  useEffect(() => {
+    toastShown.current = false;
+  }, [location.pathname]);
 
   // Display loading state during initial load
   if (isLoading) {
@@ -29,29 +36,32 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
   if (!user) {
     // Show toast only once per session
     const toastId = "auth-required";
-    if (location.pathname !== "/auth/login") {
+    if (location.pathname !== "/auth/login" && !toastShown.current) {
       toast.error("Vous devez être connecté pour accéder à cette page", { id: toastId });
+      toastShown.current = true;
     }
     return <Navigate to="/auth/login" state={{ from: location.pathname }} replace />;
   }
 
   // Special case: user is authenticated but profile is not loaded yet
   if (user && !profile) {
-    console.log('User is authenticated but profile is not loaded');
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-4">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold">Chargement de votre profil</h2>
-          <p className="text-muted-foreground mt-2">Veuillez patienter pendant le chargement de votre profil...</p>
-        </div>
-      </div>
-    );
+    console.log('User is authenticated but profile is not loaded, redirecting to homepage');
+    const toastId = "profile-not-found";
+    if (!toastShown.current) {
+      toast.error("Profil utilisateur non trouvé. Veuillez vous reconnecter.", { id: toastId });
+      toastShown.current = true;
+    }
+    // Redirect to homepage if profile is not found
+    return <Navigate to="/" replace />;
   }
 
   // Check role if specified
   if (role && profile && profile.role !== role) {
     const toastId = "role-required";
-    toast.error(`Accès réservé aux ${role === 'artist' ? 'artistes' : 'managers'}`, { id: toastId });
+    if (!toastShown.current) {
+      toast.error(`Accès réservé aux ${role === 'artist' ? 'artistes' : 'managers'}`, { id: toastId });
+      toastShown.current = true;
+    }
     
     // Redirect to the appropriate home page based on user role
     if (profile.role === 'artist') {
