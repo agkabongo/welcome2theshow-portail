@@ -1,5 +1,5 @@
 
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Music, Image, Users, LogOut, User, LogIn } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,10 +11,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 export const Navigation = () => {
   const location = useLocation();
-  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+  const { user, profile, signOut, isLoading } = useAuth();
   
   const isManagerPortal = location.pathname.startsWith("/manager");
   const isArtistPortal = location.pathname.startsWith("/artist");
@@ -29,6 +31,38 @@ export const Navigation = () => {
       .substring(0, 2);
   };
 
+  const handleNavigation = (path: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    // Check if user is authenticated before navigating
+    if (!user) {
+      toast.error("Vous devez être connecté pour accéder à cette page");
+      navigate("/auth/login");
+      return;
+    }
+    
+    // Check if profile exists
+    if (!profile) {
+      console.log("Navigation attempted without profile:", { user: user?.id, path });
+      return; // Don't navigate if profile is still loading
+    }
+    
+    // Check role for artist paths
+    if (path.startsWith("/artist/") && profile.role !== "artist") {
+      toast.error("Cette section est réservée aux artistes");
+      return;
+    }
+    
+    // Check role for manager paths
+    if (path.startsWith("/manager") && profile.role !== "manager") {
+      toast.error("Cette section est réservée aux managers");
+      return;
+    }
+    
+    // If all checks pass, navigate to the path
+    navigate(path);
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b">
       <div className="container mx-auto px-4">
@@ -40,8 +74,9 @@ export const Navigation = () => {
           <div className="flex gap-6 items-center">
             {isArtistPortal ? (
               <>
-                <Link
-                  to="/artist/moodboard"
+                <a
+                  href="/artist/moodboard"
+                  onClick={handleNavigation("/artist/moodboard")}
                   className={cn(
                     "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
                     "hover:bg-secondary/80",
@@ -50,9 +85,10 @@ export const Navigation = () => {
                 >
                   <Image size={18} />
                   <span>Mood Board</span>
-                </Link>
-                <Link
-                  to="/artist/milestones"
+                </a>
+                <a
+                  href="/artist/milestones"
+                  onClick={handleNavigation("/artist/milestones")}
                   className={cn(
                     "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
                     "hover:bg-secondary/80",
@@ -61,9 +97,10 @@ export const Navigation = () => {
                 >
                   <Music size={18} />
                   <span>Milestones</span>
-                </Link>
-                <Link
-                  to="/artist/music"
+                </a>
+                <a
+                  href="/artist/music"
+                  onClick={handleNavigation("/artist/music")}
                   className={cn(
                     "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
                     "hover:bg-secondary/80",
@@ -72,11 +109,12 @@ export const Navigation = () => {
                 >
                   <Music size={18} />
                   <span>Ma Musique</span>
-                </Link>
+                </a>
               </>
             ) : isManagerPortal ? (
-              <Link
-                to="/manager"
+              <a
+                href="/manager"
+                onClick={handleNavigation("/manager")}
                 className={cn(
                   "flex items-center gap-2 px-4 py-2 rounded-full transition-all",
                   "hover:bg-secondary/80",
@@ -85,7 +123,7 @@ export const Navigation = () => {
               >
                 <Users size={18} />
                 <span>Artistes</span>
-              </Link>
+              </a>
             ) : null}
             
             {user ? (
