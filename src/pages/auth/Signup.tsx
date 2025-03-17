@@ -7,12 +7,14 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 const Signup = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<'artist' | 'manager'>('artist');
+  const [role, setRole] = useState<'artist' | 'manager' | 'admin'>('artist');
   const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
 
@@ -74,7 +76,7 @@ const Signup = () => {
             </div>
             <div className="space-y-2">
               <Label>Type de compte</Label>
-              <RadioGroup defaultValue={role} className="flex space-x-4" onValueChange={(value) => setRole(value as 'artist' | 'manager')}>
+              <RadioGroup defaultValue={role} className="flex flex-wrap gap-4" onValueChange={(value) => setRole(value as 'artist' | 'manager' | 'admin')}>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="artist" id="artist" />
                   <Label htmlFor="artist">Artiste</Label>
@@ -83,8 +85,21 @@ const Signup = () => {
                   <RadioGroupItem value="manager" id="manager" />
                   <Label htmlFor="manager">Manager</Label>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="admin" id="admin" />
+                  <Label htmlFor="admin">Admin</Label>
+                </div>
               </RadioGroup>
             </div>
+            
+            {role === 'admin' && (
+              <Alert className="bg-amber-50 border-amber-200">
+                <InfoIcon className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800">
+                  Le rôle d'administrateur donne accès à toutes les données de l'application. Utilisez-le avec précaution.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={isLoading}>
