@@ -16,7 +16,12 @@ export const useAuthOperations = () => {
    */
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      console.log('Attempting sign in for:', email);
+      
+      const { data, error } = await supabase.auth.signInWithPassword({ 
+        email, 
+        password 
+      });
       
       if (error) {
         console.error('Sign in error:', error.message);
@@ -26,17 +31,25 @@ export const useAuthOperations = () => {
 
       if (data.user) {
         toast.success('Connexion réussie!');
-        const userProfile = await fetchUserProfile(data.user.id);
         
-        if (userProfile) {
-          if (userProfile.role === 'artist') {
-            navigate('/artist/milestones');
+        try {
+          const userProfile = await fetchUserProfile(data.user.id);
+          
+          if (userProfile) {
+            console.log('User profile found:', userProfile);
+            if (userProfile.role === 'artist') {
+              navigate('/artist/milestones');
+            } else {
+              navigate('/manager');
+            }
           } else {
-            navigate('/manager');
+            console.warn('User authenticated but profile not found');
+            toast.error('Profil utilisateur non trouvé. Veuillez contacter le support.');
+            navigate('/');
           }
-        } else {
-          // Profile not found but user is authenticated
-          console.warn('User authenticated but profile not found');
+        } catch (profileError) {
+          console.error('Error fetching profile after login:', profileError);
+          toast.error('Erreur lors du chargement de votre profil');
           navigate('/');
         }
       }
@@ -51,6 +64,8 @@ export const useAuthOperations = () => {
    */
   const signUp = async (email: string, password: string, role: 'artist' | 'manager', fullName: string) => {
     try {
+      console.log('Attempting sign up for:', email, 'as', role);
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -81,6 +96,8 @@ export const useAuthOperations = () => {
    */
   const signOut = async () => {
     try {
+      console.log('Signing out user');
+      
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -89,6 +106,7 @@ export const useAuthOperations = () => {
         return;
       }
       
+      console.log('User signed out successfully');
       navigate('/');
       toast.success('Déconnexion réussie!');
     } catch (error: any) {

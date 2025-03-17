@@ -17,15 +17,10 @@ export const useProfileOperations = () => {
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error('Error fetching profile:', error);
-        return null;
-      }
-
-      if (!data) {
-        console.warn('No profile found for user:', userId);
         return null;
       }
 
@@ -37,7 +32,35 @@ export const useProfileOperations = () => {
     }
   };
 
+  /**
+   * Updates a user profile
+   */
+  const updateUserProfile = async (profile: Partial<Profile>): Promise<boolean> => {
+    try {
+      if (!profile.id) {
+        console.error('Cannot update profile without an ID');
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(profile)
+        .eq('id', profile.id);
+
+      if (error) {
+        console.error('Error updating profile:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error in updateUserProfile:', error);
+      return false;
+    }
+  };
+
   return {
-    fetchUserProfile
+    fetchUserProfile,
+    updateUserProfile
   };
 };

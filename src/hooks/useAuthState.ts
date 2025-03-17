@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types';
@@ -14,77 +14,82 @@ export const useAuthState = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { fetchUserProfile } = useProfileOperations();
-  const initialized = useRef(false);
 
   useEffect(() => {
-    // Set up auth state tracking
-    const setupAuth = async () => {
-      if (initialized.current) return;
-      initialized.current = true;
-      
+    let mounted = true;
+    
+    async function getInitialSession() {
+      setIsLoading(true);
+
       try {
-        console.log('Initializing auth state...');
-        setIsLoading(true);
-        
-        // Get initial session
+        console.log('Getting initial session');
         const { data } = await supabase.auth.getSession();
         
+        if (!mounted) return;
+
         if (data.session) {
-          console.log('Initial session found:', data.session.user.id);
+          console.log('Session found:', data.session.user.id);
           setSession(data.session);
           setUser(data.session.user);
           
-          // Load user profile
+          // Load profile
           if (data.session.user) {
             const userProfile = await fetchUserProfile(data.session.user.id);
-            setProfile(userProfile);
+            if (mounted) {
+              setProfile(userProfile);
+            }
           }
         } else {
           console.log('No initial session found');
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('Error fetching initial session:', error);
       } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    // Set up auth state listener
-    const setupAuthListener = () => {
-      const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-        console.log('Auth state change:', event, newSession?.user?.id);
-        
-        if (event === 'SIGNED_OUT') {
-          // Handle sign out
-          setSession(null);
-          setUser(null);
-          setProfile(null);
+        if (mounted) {
           setIsLoading(false);
-          return;
         }
+      }
+    }
+
+    getInitialSession();
+
+    // Set up auth state listener
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log('Auth state changed:', event);
+
+      if (!mounted) return;
+      
+      if (event === 'SIGNED_OUT') {
+        setSession(null);
+        setUser(null);
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+      
+      if (newSession) {
+        console.log('New session detected:', newSession.user.id);
+        setSession(newSession);
+        setUser(newSession.user);
         
-        if (newSession) {
-          setSession(newSession);
-          setUser(newSession.user);
-          
-          if (newSession.user) {
-            // Load user profile
-            const userProfile = await fetchUserProfile(newSession.user.id);
+        if (newSession.user) {
+          console.log('Fetching profile for new session');
+          const userProfile = await fetchUserProfile(newSession.user.id);
+          if (mounted) {
             setProfile(userProfile);
           }
         }
-        
-        setIsLoading(false);
-      });
+      }
       
-      return authListener.subscription.unsubscribe;
-    };
-    
-    setupAuth();
-    const unsubscribe = setupAuthListener();
+      if (mounted) {
+        setIsLoading(false);
+      }
+    });
     
     return () => {
-      unsubscribe();
+      console.log('Cleaning up auth listeners');
+      mounted = false;
+      authListener.subscription.unsubscribe();
     };
   }, []); // Empty dependency array - only run once
 

@@ -13,14 +13,57 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
   const { user, profile, isLoading } = useAuth();
   const location = useLocation();
   const toastShown = useRef(false);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const loadingTimeRef = useRef<number | null>(null);
 
   // Reset toast flag when location changes
   useEffect(() => {
     toastShown.current = false;
-  }, [location.pathname]);
+    
+    // Set a timestamp when we start loading
+    if (isLoading && loadingTimeRef.current === null) {
+      loadingTimeRef.current = Date.now();
+    }
+    
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
+  }, [location.pathname, isLoading]);
+  
+  // Set a timeout to force-proceed if loading takes too long
+  useEffect(() => {
+    if (isLoading && !loadingTimeoutRef.current) {
+      loadingTimeoutRef.current = setTimeout(() => {
+        console.log('Loading timeout reached, force proceeding');
+        
+        if (!user && !toastShown.current) {
+          toast.error("Impossible de charger votre profil. Veuillez vous reconnecter.", { id: "loading-timeout" });
+          toastShown.current = true;
+        }
+      }, 5000); // 5 seconds timeout
+    }
+    
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+    };
+  }, [isLoading, user]);
 
-  // Display loading state during initial load
-  if (isLoading) {
+  // Log loading state for debugging
+  console.log('PrivateRoute:', { 
+    isLoading, 
+    user: user?.id, 
+    profile: profile?.role,
+    requiredRole: role,
+    loadingTime: loadingTimeRef.current ? (Date.now() - loadingTimeRef.current) : 0
+  });
+
+  // Display loading state during initial load (for a reasonable time)
+  if (isLoading && (loadingTimeRef.current === null || Date.now() - loadingTimeRef.current < 5000)) {
     console.log('PrivateRoute: Loading state');
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-4 space-y-4">
@@ -36,7 +79,6 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
   // Redirect to login if user is not authenticated
   if (!user) {
     console.log('PrivateRoute: No user, redirecting to login');
-    // Show toast only once per session
     if (!toastShown.current) {
       toast.error("Vous devez être connecté pour accéder à cette page", { id: "auth-required" });
       toastShown.current = true;
@@ -75,6 +117,7 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
   }
 
   console.log('PrivateRoute: Access granted');
+  
   // All checks passed, render the protected route
   return <Outlet />;
 };
