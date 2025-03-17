@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
@@ -12,7 +11,7 @@ type AuthContextType = {
   profile: Profile | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, role: 'artist' | 'manager' | 'admin', fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, role: 'artist' | 'manager', fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -92,8 +91,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (userProfile) {
           if (userProfile.role === 'artist') {
             navigate('/artist/milestones');
-          } else if (userProfile.role === 'admin') {
-            navigate('/admin/dashboard');
           } else {
             navigate('/manager');
           }
@@ -105,7 +102,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, role: 'artist' | 'manager' | 'admin', fullName: string) => {
+  const signUp = async (email: string, password: string, role: 'artist' | 'manager', fullName: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,

@@ -3,7 +3,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
 type PrivateRouteProps = {
-  role?: 'artist' | 'manager' | 'admin';
+  role?: 'artist' | 'manager';
 };
 
 const PrivateRoute = ({ role }: PrivateRouteProps) => {
@@ -19,11 +19,6 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
 
   if (!user) {
     return <Navigate to="/auth/login" replace />;
-  }
-
-  // Les admins ont accès à toutes les routes
-  if (profile?.role === 'admin') {
-    return <Outlet />;
   }
 
   if (role && profile?.role !== role) {
