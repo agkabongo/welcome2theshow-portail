@@ -1,4 +1,3 @@
-
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Music, Image, Users, LogOut, User, LogIn } from "lucide-react";
@@ -16,10 +15,22 @@ import { toast } from "sonner";
 export const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, profile, signOut, isLoading } = useAuth();
+  const { user, profile, signOut, isLoading, session } = useAuth();
   
   const isManagerPortal = location.pathname.startsWith("/manager");
   const isArtistPortal = location.pathname.startsWith("/artist");
+  
+  const getUserRole = () => {
+    if (profile?.role) {
+      return profile.role;
+    }
+    
+    if (session?.user?.user_metadata?.role) {
+      return session.user.user_metadata.role;
+    }
+    
+    return null;
+  };
   
   const getInitials = (name?: string | null) => {
     if (!name) return "U";
@@ -34,32 +45,32 @@ export const Navigation = () => {
   const handleNavigation = (path: string) => (e: React.MouseEvent) => {
     e.preventDefault();
     
-    // Check if user is authenticated before navigating
     if (!user) {
       toast.error("Vous devez être connecté pour accéder à cette page");
       navigate("/auth/login");
       return;
     }
     
-    // Check if profile exists
-    if (!profile) {
-      console.log("Navigation attempted without profile:", { user: user?.id, path });
-      return; // Don't navigate if profile is still loading
+    const userRole = getUserRole();
+    
+    if (path.startsWith("/artist/") && userRole !== "artist") {
+      if (isLoading) {
+        console.log("Profile still loading, checking session metadata");
+      } else {
+        toast.error("Cette section est réservée aux artistes");
+        return;
+      }
     }
     
-    // Check role for artist paths
-    if (path.startsWith("/artist/") && profile.role !== "artist") {
-      toast.error("Cette section est réservée aux artistes");
-      return;
+    if (path.startsWith("/manager") && userRole !== "manager") {
+      if (isLoading) {
+        console.log("Profile still loading, checking session metadata");
+      } else {
+        toast.error("Cette section est réservée aux managers");
+        return;
+      }
     }
     
-    // Check role for manager paths
-    if (path.startsWith("/manager") && profile.role !== "manager") {
-      toast.error("Cette section est réservée aux managers");
-      return;
-    }
-    
-    // If all checks pass, navigate to the path
     navigate(path);
   };
 
@@ -132,14 +143,14 @@ export const Navigation = () => {
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
                       <AvatarImage src={profile?.avatar_url || ""} alt={profile?.full_name || ""} />
-                      <AvatarFallback>{getInitials(profile?.full_name)}</AvatarFallback>
+                      <AvatarFallback>{getInitials(profile?.full_name || session?.user?.user_metadata?.full_name)}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem className="flex items-center gap-2 cursor-default">
                     <User size={14} />
-                    <span>{profile?.full_name || 'Utilisateur'}</span>
+                    <span>{profile?.full_name || session?.user?.user_metadata?.full_name || 'Utilisateur'}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => signOut()} className="flex items-center gap-2">
                     <LogOut size={14} />

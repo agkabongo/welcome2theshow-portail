@@ -10,11 +10,25 @@ type PrivateRouteProps = {
 };
 
 const PrivateRoute = ({ role }: PrivateRouteProps) => {
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading, session } = useAuth();
   const location = useLocation();
   const toastShown = useRef(false);
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loadingTimeRef = useRef<number | null>(null);
+
+  // Get user role from profile or session metadata as fallback
+  const getUserRole = () => {
+    if (profile?.role) {
+      return profile.role;
+    }
+    
+    // Fallback to metadata from session if profile is not loaded yet
+    if (session?.user?.user_metadata?.role) {
+      return session.user.user_metadata.role;
+    }
+    
+    return null;
+  };
 
   // Reset toast flag when location changes
   useEffect(() => {
@@ -58,6 +72,7 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
     isLoading, 
     user: user?.id, 
     profile: profile?.role,
+    sessionRole: session?.user?.user_metadata?.role,
     requiredRole: role,
     loadingTime: loadingTimeRef.current ? (Date.now() - loadingTimeRef.current) : 0
   });
@@ -86,29 +101,21 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
     return <Navigate to="/auth/login" state={{ from: location.pathname }} replace />;
   }
 
-  // Special case: user is authenticated but profile is not loaded yet
-  if (user && !profile) {
-    console.log('PrivateRoute: User authenticated but no profile');
-    if (!toastShown.current) {
-      toast.error("Profil utilisateur non trouvé. Veuillez vous reconnecter.", { id: "profile-not-found" });
-      toastShown.current = true;
-    }
-    // Redirect to homepage if profile is not found
-    return <Navigate to="/" replace />;
-  }
+  // Use user role from profile or session metadata
+  const userRole = getUserRole();
 
   // Check role if specified
-  if (role && profile && profile.role !== role) {
-    console.log(`PrivateRoute: User has role ${profile.role}, but ${role} is required`);
+  if (role && userRole && userRole !== role) {
+    console.log(`PrivateRoute: User has role ${userRole}, but ${role} is required`);
     if (!toastShown.current) {
       toast.error(`Accès réservé aux ${role === 'artist' ? 'artistes' : 'managers'}`, { id: "role-required" });
       toastShown.current = true;
     }
     
     // Redirect to the appropriate home page based on user role
-    if (profile.role === 'artist') {
+    if (userRole === 'artist') {
       return <Navigate to="/artist/milestones" replace />;
-    } else if (profile.role === 'manager') {
+    } else if (userRole === 'manager') {
       return <Navigate to="/manager" replace />;
     }
     
