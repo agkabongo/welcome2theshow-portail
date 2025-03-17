@@ -1,8 +1,9 @@
+
 import { Database } from '@/integrations/supabase/types';
 
 export type Profile = {
   id: string;
-  username: string;
+  username: string | null;
   full_name: string | null;
   role: 'artist' | 'manager';
   avatar_url: string | null;
