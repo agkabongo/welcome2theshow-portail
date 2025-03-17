@@ -9,7 +9,272 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      artist_managers: {
+        Row: {
+          artist_id: string
+          created_at: string
+          id: string
+          manager_id: string
+        }
+        Insert: {
+          artist_id: string
+          created_at?: string
+          id?: string
+          manager_id: string
+        }
+        Update: {
+          artist_id?: string
+          created_at?: string
+          id?: string
+          manager_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "artist_managers_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "artist_managers_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      milestones: {
+        Row: {
+          artist_id: string
+          category: string
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          artist_id: string
+          category: string
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          artist_id?: string
+          category?: string
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestones_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      moodboard_images: {
+        Row: {
+          artist_id: string
+          caption: string | null
+          created_at: string
+          id: string
+          image_url: string
+        }
+        Insert: {
+          artist_id: string
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+        }
+        Update: {
+          artist_id?: string
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "moodboard_images_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      music_tracks: {
+        Row: {
+          artist_id: string
+          audio_url: string | null
+          cover_art_url: string | null
+          created_at: string
+          id: string
+          release_date: string | null
+          title: string
+        }
+        Insert: {
+          artist_id: string
+          audio_url?: string | null
+          cover_art_url?: string | null
+          created_at?: string
+          id?: string
+          release_date?: string | null
+          title: string
+        }
+        Update: {
+          artist_id?: string
+          audio_url?: string | null
+          cover_art_url?: string | null
+          created_at?: string
+          id?: string
+          release_date?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "music_tracks_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      social_media: {
+        Row: {
+          engagement_rate: number | null
+          followers: number | null
+          id: string
+          last_updated: string | null
+          platform: string
+          profile_id: string
+          url: string
+          username: string
+        }
+        Insert: {
+          engagement_rate?: number | null
+          followers?: number | null
+          id?: string
+          last_updated?: string | null
+          platform: string
+          profile_id: string
+          url: string
+          username: string
+        }
+        Update: {
+          engagement_rate?: number | null
+          followers?: number | null
+          id?: string
+          last_updated?: string | null
+          platform?: string
+          profile_id?: string
+          url?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_media_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          artist_id: string
+          completed: boolean | null
+          created_at: string
+          id: string
+          milestone_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          artist_id: string
+          completed?: boolean | null
+          created_at?: string
+          id?: string
+          milestone_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          artist_id?: string
+          completed?: boolean | null
+          created_at?: string
+          id?: string
+          milestone_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_artist_id_fkey"
+            columns: ["artist_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +283,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      user_role: "artist" | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
