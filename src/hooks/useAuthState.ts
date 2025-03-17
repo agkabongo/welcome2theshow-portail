@@ -13,89 +13,80 @@ export const useAuthState = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const initialized = useRef(false);
   const { fetchUserProfile } = useProfileOperations();
-
-  // Function to fetch and set the user profile
-  const loadUserProfile = async (userId: string) => {
-    try {
-      const userProfile = await fetchUserProfile(userId);
-      console.log('User profile loaded:', userProfile?.role);
-      setProfile(userProfile);
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      setProfile(null);
-    }
-  };
+  const initialized = useRef(false);
 
   useEffect(() => {
-    // Prevent multiple initializations
-    if (initialized.current) return;
-    
-    initialized.current = true;
-    console.log('Initializing auth state...');
-
-    const initializeAuth = async () => {
+    // Set up auth state tracking
+    const setupAuth = async () => {
+      if (initialized.current) return;
+      initialized.current = true;
+      
       try {
-        // Get current session
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        console.log('Initializing auth state...');
+        setIsLoading(true);
         
-        if (currentSession) {
-          console.log('Session found:', currentSession.user?.id);
-          setSession(currentSession);
-          setUser(currentSession.user);
+        // Get initial session
+        const { data } = await supabase.auth.getSession();
+        
+        if (data.session) {
+          console.log('Initial session found:', data.session.user.id);
+          setSession(data.session);
+          setUser(data.session.user);
           
-          // Fetch profile if user is logged in
-          if (currentSession.user) {
-            await loadUserProfile(currentSession.user.id);
+          // Load user profile
+          if (data.session.user) {
+            const userProfile = await fetchUserProfile(data.session.user.id);
+            setProfile(userProfile);
           }
         } else {
-          console.log('No active session');
-          setSession(null);
-          setUser(null);
-          setProfile(null);
+          console.log('No initial session found');
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        setSession(null);
-        setUser(null);
-        setProfile(null);
       } finally {
         setIsLoading(false);
       }
     };
-
-    // Initialize auth
-    initializeAuth();
-
-    // Subscribe to auth state changes
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      console.log('Auth state change:', event, currentSession?.user?.id);
-      
-      if (currentSession) {
-        setSession(currentSession);
-        setUser(currentSession.user);
+    
+    // Set up auth state listener
+    const setupAuthListener = () => {
+      const { data: authListener } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+        console.log('Auth state change:', event, newSession?.user?.id);
         
-        // Fetch profile if user is logged in
-        if (currentSession.user) {
-          await loadUserProfile(currentSession.user.id);
+        if (event === 'SIGNED_OUT') {
+          // Handle sign out
+          setSession(null);
+          setUser(null);
+          setProfile(null);
+          setIsLoading(false);
+          return;
         }
-      } else {
-        // User signed out or session expired
-        setSession(null);
-        setUser(null);
-        setProfile(null);
-      }
+        
+        if (newSession) {
+          setSession(newSession);
+          setUser(newSession.user);
+          
+          if (newSession.user) {
+            // Load user profile
+            const userProfile = await fetchUserProfile(newSession.user.id);
+            setProfile(userProfile);
+          }
+        }
+        
+        setIsLoading(false);
+      });
       
-      // Ensure loading state is updated regardless of outcome
-      setIsLoading(false);
-    });
-
-    // Cleanup subscription on unmount
-    return () => {
-      authListener.subscription.unsubscribe();
+      return authListener.subscription.unsubscribe;
     };
-  }, []); // Empty dependency array
+    
+    setupAuth();
+    const unsubscribe = setupAuthListener();
+    
+    return () => {
+      unsubscribe();
+    };
+  }, []); // Empty dependency array - only run once
 
   return {
     session,

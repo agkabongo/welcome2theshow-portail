@@ -13,7 +13,6 @@ export const useProfileOperations = () => {
     try {
       console.log('Fetching profile for user:', userId);
       
-      // Use maybeSingle() instead of single() to prevent errors if no profile exists
       const { data, error } = await supabase
         .from('profiles')
         .select('*')

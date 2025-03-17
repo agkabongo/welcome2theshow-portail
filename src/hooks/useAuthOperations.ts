@@ -19,11 +19,13 @@ export const useAuthOperations = () => {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
+        console.error('Sign in error:', error.message);
         toast.error(error.message);
         return;
       }
 
       if (data.user) {
+        toast.success('Connexion réussie!');
         const userProfile = await fetchUserProfile(data.user.id);
         
         if (userProfile) {
@@ -32,10 +34,14 @@ export const useAuthOperations = () => {
           } else {
             navigate('/manager');
           }
-          toast.success('Connexion réussie!');
+        } else {
+          // Profile not found but user is authenticated
+          console.warn('User authenticated but profile not found');
+          navigate('/');
         }
       }
     } catch (error: any) {
+      console.error('Error during sign in:', error);
       toast.error(error.message || "Une erreur s'est produite lors de la connexion");
     }
   };
@@ -57,6 +63,7 @@ export const useAuthOperations = () => {
       });
       
       if (error) {
+        console.error('Sign up error:', error.message);
         toast.error(error.message);
         return;
       }
@@ -64,6 +71,7 @@ export const useAuthOperations = () => {
       toast.success('Inscription réussie! Vous pouvez maintenant vous connecter.');
       navigate('/auth/login');
     } catch (error: any) {
+      console.error('Error during sign up:', error);
       toast.error(error.message || "Une erreur s'est produite lors de l'inscription");
     }
   };
@@ -76,6 +84,7 @@ export const useAuthOperations = () => {
       const { error } = await supabase.auth.signOut();
       
       if (error) {
+        console.error('Sign out error:', error.message);
         toast.error(error.message);
         return;
       }
@@ -83,6 +92,7 @@ export const useAuthOperations = () => {
       navigate('/');
       toast.success('Déconnexion réussie!');
     } catch (error: any) {
+      console.error('Error during sign out:', error);
       toast.error(error.message || "Une erreur s'est produite lors de la déconnexion");
     }
   };

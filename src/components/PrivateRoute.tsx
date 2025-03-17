@@ -21,6 +21,7 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
 
   // Display loading state during initial load
   if (isLoading) {
+    console.log('PrivateRoute: Loading state');
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-4 space-y-4">
         <div className="w-full max-w-md space-y-4">
@@ -34,10 +35,10 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
 
   // Redirect to login if user is not authenticated
   if (!user) {
+    console.log('PrivateRoute: No user, redirecting to login');
     // Show toast only once per session
-    const toastId = "auth-required";
-    if (location.pathname !== "/auth/login" && !toastShown.current) {
-      toast.error("Vous devez être connecté pour accéder à cette page", { id: toastId });
+    if (!toastShown.current) {
+      toast.error("Vous devez être connecté pour accéder à cette page", { id: "auth-required" });
       toastShown.current = true;
     }
     return <Navigate to="/auth/login" state={{ from: location.pathname }} replace />;
@@ -45,10 +46,9 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
 
   // Special case: user is authenticated but profile is not loaded yet
   if (user && !profile) {
-    console.log('User is authenticated but profile is not loaded, redirecting to homepage');
-    const toastId = "profile-not-found";
+    console.log('PrivateRoute: User authenticated but no profile');
     if (!toastShown.current) {
-      toast.error("Profil utilisateur non trouvé. Veuillez vous reconnecter.", { id: toastId });
+      toast.error("Profil utilisateur non trouvé. Veuillez vous reconnecter.", { id: "profile-not-found" });
       toastShown.current = true;
     }
     // Redirect to homepage if profile is not found
@@ -57,9 +57,9 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
 
   // Check role if specified
   if (role && profile && profile.role !== role) {
-    const toastId = "role-required";
+    console.log(`PrivateRoute: User has role ${profile.role}, but ${role} is required`);
     if (!toastShown.current) {
-      toast.error(`Accès réservé aux ${role === 'artist' ? 'artistes' : 'managers'}`, { id: toastId });
+      toast.error(`Accès réservé aux ${role === 'artist' ? 'artistes' : 'managers'}`, { id: "role-required" });
       toastShown.current = true;
     }
     
@@ -74,6 +74,7 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
     return <Navigate to="/" replace />;
   }
 
+  console.log('PrivateRoute: Access granted');
   // All checks passed, render the protected route
   return <Outlet />;
 };
