@@ -12,56 +12,59 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
   const { user, profile, isLoading } = useAuth();
   const location = useLocation();
 
-  // Afficher un spinner pendant le chargement initial seulement
+  // Display loading state during initial load
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-4 space-y-4">
-        <Skeleton className="h-12 w-12 rounded-full" />
-        <div className="text-muted-foreground text-sm mt-2">Chargement en cours...</div>
+        <div className="w-full max-w-md space-y-4">
+          <Skeleton className="h-12 w-12 rounded-full mx-auto" />
+          <Skeleton className="h-4 w-40 mx-auto" />
+          <div className="text-muted-foreground text-sm text-center mt-2">Chargement de votre profil...</div>
+        </div>
       </div>
     );
   }
 
-  // Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
+  // Redirect to login if user is not authenticated
   if (!user) {
-    // Éviter de montrer des toasts répétés lors des redirections
+    // Show toast only once per session
+    const toastId = "auth-required";
     if (location.pathname !== "/auth/login") {
-      toast.error("Vous devez être connecté pour accéder à cette page", {
-        id: "auth-required",
-      });
+      toast.error("Vous devez être connecté pour accéder à cette page", { id: toastId });
     }
     return <Navigate to="/auth/login" state={{ from: location.pathname }} replace />;
   }
 
-  // Vérifier le rôle si nécessaire (seulement si le profil est chargé)
+  // Special case: user is authenticated but profile is not loaded yet
+  if (user && !profile) {
+    console.log('User is authenticated but profile is not loaded');
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-4">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold">Chargement de votre profil</h2>
+          <p className="text-muted-foreground mt-2">Veuillez patienter pendant le chargement de votre profil...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check role if specified
   if (role && profile && profile.role !== role) {
-    toast.error(`Accès réservé aux ${role === 'artist' ? 'artistes' : 'managers'}`, {
-      id: "role-required",
-    });
+    const toastId = "role-required";
+    toast.error(`Accès réservé aux ${role === 'artist' ? 'artistes' : 'managers'}`, { id: toastId });
     
-    // Rediriger vers la page d'accueil du rôle correspondant
+    // Redirect to the appropriate home page based on user role
     if (profile.role === 'artist') {
       return <Navigate to="/artist/milestones" replace />;
     } else if (profile.role === 'manager') {
       return <Navigate to="/manager" replace />;
     }
     
+    // Fallback to homepage
     return <Navigate to="/" replace />;
   }
 
-  // Si on a un utilisateur mais pas encore de profil (cas rare mais possible)
-  if (user && !profile && role) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-4">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold">Initialisation du profil</h2>
-          <p className="text-muted-foreground mt-2">Veuillez patienter pendant l'initialisation de votre profil...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Afficher le contenu de la route si tout est OK
+  // All checks passed, render the protected route
   return <Outlet />;
 };
 

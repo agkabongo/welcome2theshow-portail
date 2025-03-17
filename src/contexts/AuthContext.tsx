@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { session, user, profile, isLoading } = useAuthState();
   const { signIn, signUp, signOut } = useAuthOperations();
 
+  // Combine the state and operations into a single value
   const value = {
     session,
     user,

@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types';
@@ -13,43 +13,48 @@ export const useAuthState = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const initialized = useRef(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const { fetchUserProfile } = useProfileOperations();
 
   useEffect(() => {
-    // Initialize auth state only once
+    // Prevent multiple initializations
+    if (isInitialized) return;
+
     const initializeAuth = async () => {
-      if (initialized.current) return;
-      initialized.current = true;
-      
-      setIsLoading(true);
+      console.log('Initializing auth state...');
       try {
         // Get current session
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         
         if (currentSession) {
+          console.log('Session found:', currentSession.user?.id);
           setSession(currentSession);
           setUser(currentSession.user);
           
           // Fetch profile if user is logged in
           if (currentSession.user) {
-            const userProfile = await fetchUserProfile(currentSession.user.id);
-            setProfile(userProfile);
+            try {
+              const userProfile = await fetchUserProfile(currentSession.user.id);
+              setProfile(userProfile);
+              console.log('User profile loaded:', userProfile?.role);
+            } catch (error) {
+              console.error('Error fetching user profile:', error);
+            }
           }
         } else {
-          // No active session
+          console.log('No active session');
           setSession(null);
           setUser(null);
           setProfile(null);
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
-        // Reset state on error
         setSession(null);
         setUser(null);
         setProfile(null);
       } finally {
         setIsLoading(false);
+        setIsInitialized(true);
       }
     };
 
@@ -66,8 +71,12 @@ export const useAuthState = () => {
         
         // Fetch profile if user is logged in
         if (currentSession.user) {
-          const userProfile = await fetchUserProfile(currentSession.user.id);
-          setProfile(userProfile);
+          try {
+            const userProfile = await fetchUserProfile(currentSession.user.id);
+            setProfile(userProfile);
+          } catch (error) {
+            console.error('Error fetching profile on auth change:', error);
+          }
         }
       } else {
         // User signed out or session expired
@@ -81,7 +90,7 @@ export const useAuthState = () => {
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []); // Empty dependency array ensures this runs once
+  }, [fetchUserProfile, isInitialized]); // Add dependencies
 
   return {
     session,
