@@ -23,11 +23,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Fonction pour récupérer le profil d'un utilisateur
-    const fetchProfile = async (userId: string) => {
+  // Fonction pour récupérer le profil d'un utilisateur
+  const fetchUserProfile = async (userId: string): Promise<Profile | null> => {
+    try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -40,57 +41,84 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       return data as Profile;
-    };
+    } catch (error) {
+      console.error('Error in fetchUserProfile:', error);
+      return null;
+    }
+  };
 
-    const getSession = async () => {
+  useEffect(() => {
+    // Cette fonction ne s'exécute qu'une seule fois
+    const initializeAuth = async () => {
+      if (initialized) return; // Éviter les appels multiples
+      
       setIsLoading(true);
       try {
         // Récupère la session actuelle
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        setSession(currentSession);
-        setUser(currentSession?.user || null);
-
-        // Si un utilisateur est connecté, récupérer son profil
-        if (currentSession?.user) {
-          const userProfile = await fetchProfile(currentSession.user.id);
-          setProfile(userProfile);
+        
+        if (currentSession) {
+          setSession(currentSession);
+          setUser(currentSession.user);
+          
+          // Si un utilisateur est connecté, récupérer son profil
+          if (currentSession.user) {
+            const userProfile = await fetchUserProfile(currentSession.user.id);
+            setProfile(userProfile);
+          }
+        } else {
+          // Aucune session active
+          setSession(null);
+          setUser(null);
+          setProfile(null);
         }
       } catch (error) {
-        console.error('Error getting session:', error);
+        console.error('Error initializing auth:', error);
+        // Réinitialiser l'état en cas d'erreur
+        setSession(null);
+        setUser(null);
+        setProfile(null);
       } finally {
         setIsLoading(false);
+        setInitialized(true);
       }
     };
 
     // Initialisation: récupérer la session actuelle
-    getSession();
+    initializeAuth();
 
     // S'abonner aux changements d'état d'authentification
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
       console.log('Auth state change:', event, currentSession?.user?.id);
-      setSession(currentSession);
-      setUser(currentSession?.user || null);
-
-      // Si un utilisateur est connecté, récupérer son profil
-      if (currentSession?.user) {
-        const userProfile = await fetchProfile(currentSession.user.id);
-        setProfile(userProfile);
+      
+      // Ne pas mettre isLoading à true ici pour éviter de bloquer l'interface
+      // pendant les transitions d'authentification
+      
+      if (currentSession) {
+        setSession(currentSession);
+        setUser(currentSession.user);
+        
+        // Récupérer le profil uniquement si l'utilisateur est connecté
+        if (currentSession.user) {
+          const userProfile = await fetchUserProfile(currentSession.user.id);
+          setProfile(userProfile);
+        }
       } else {
+        // L'utilisateur s'est déconnecté ou la session a expiré
+        setSession(null);
+        setUser(null);
         setProfile(null);
       }
-
-      setIsLoading(false);
     });
 
     // Nettoyage: se désabonner à la désinscription
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, []);
+  }, [initialized]); // Dépendance à initialized pour éviter des appels multiples
 
   const signIn = async (email: string, password: string) => {
     try {
-      setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
@@ -112,14 +140,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error: any) {
       toast.error(error.message || "Une erreur s'est produite lors de la connexion");
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const signUp = async (email: string, password: string, role: 'artist' | 'manager', fullName: string) => {
     try {
-      setIsLoading(true);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -140,14 +165,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       navigate('/auth/login');
     } catch (error: any) {
       toast.error(error.message || "Une erreur s'est produite lors de l'inscription");
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const signOut = async () => {
     try {
-      setIsLoading(true);
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -155,34 +177,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
+      // Réinitialiser l'état après la déconnexion
       setProfile(null);
+      setUser(null);
+      setSession(null);
+      
       navigate('/');
       toast.success('Déconnexion réussie!');
     } catch (error: any) {
       toast.error(error.message || "Une erreur s'est produite lors de la déconnexion");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return null;
-      }
-
-      setProfile(data as Profile);
-      return data as Profile;
-    } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
-      return null;
     }
   };
 
