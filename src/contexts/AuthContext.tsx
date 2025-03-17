@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useContext, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Session, User } from '@supabase/supabase-js';
@@ -25,12 +26,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Fonction pour récupérer le profil d'un utilisateur
     const fetchProfile = async (userId: string) => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error('Error fetching profile:', error);
@@ -42,25 +44,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const getSession = async () => {
       setIsLoading(true);
+      try {
+        // Récupère la session actuelle
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        setSession(currentSession);
+        setUser(currentSession?.user || null);
 
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      setSession(currentSession);
-      setUser(currentSession?.user || null);
-
-      if (currentSession?.user) {
-        const userProfile = await fetchProfile(currentSession.user.id);
-        setProfile(userProfile);
+        // Si un utilisateur est connecté, récupérer son profil
+        if (currentSession?.user) {
+          const userProfile = await fetchProfile(currentSession.user.id);
+          setProfile(userProfile);
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+      } finally {
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     };
 
+    // Initialisation: récupérer la session actuelle
     getSession();
 
+    // S'abonner aux changements d'état d'authentification
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+      console.log('Auth state change:', event, currentSession?.user?.id);
       setSession(currentSession);
       setUser(currentSession?.user || null);
 
+      // Si un utilisateur est connecté, récupérer son profil
       if (currentSession?.user) {
         const userProfile = await fetchProfile(currentSession.user.id);
         setProfile(userProfile);
@@ -71,6 +82,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     });
 
+    // Nettoyage: se désabonner à la désinscription
     return () => {
       authListener.subscription.unsubscribe();
     };
@@ -78,6 +90,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       
       if (error) {
@@ -99,11 +112,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     } catch (error: any) {
       toast.error(error.message || "Une erreur s'est produite lors de la connexion");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const signUp = async (email: string, password: string, role: 'artist' | 'manager', fullName: string) => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -124,36 +140,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       navigate('/auth/login');
     } catch (error: any) {
       toast.error(error.message || "Une erreur s'est produite lors de l'inscription");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      
+      setProfile(null);
+      navigate('/');
+      toast.success('Déconnexion réussie!');
+    } catch (error: any) {
+      toast.error(error.message || "Une erreur s'est produite lors de la déconnexion");
+    } finally {
+      setIsLoading(false);
     }
-    
-    setProfile(null);
-    navigate('/');
-    toast.success('Déconnexion réussie!');
   };
 
   const fetchUserProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
 
-    if (error) {
-      console.error('Error fetching profile:', error);
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+
+      setProfile(data as Profile);
+      return data as Profile;
+    } catch (error) {
+      console.error('Error in fetchUserProfile:', error);
       return null;
     }
-
-    setProfile(data as Profile);
-    return data as Profile;
   };
 
   const value = {

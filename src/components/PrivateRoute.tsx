@@ -2,6 +2,7 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 type PrivateRouteProps = {
   role?: 'artist' | 'manager';
@@ -14,8 +15,10 @@ const PrivateRoute = ({ role }: PrivateRouteProps) => {
   // Afficher un spinner pendant le chargement
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-64px)] p-4 space-y-4">
+        <Skeleton className="h-12 w-12 rounded-full" />
+        <Skeleton className="h-4 w-48" />
+        <div className="text-muted-foreground text-sm">Chargement en cours...</div>
       </div>
     );
   }
